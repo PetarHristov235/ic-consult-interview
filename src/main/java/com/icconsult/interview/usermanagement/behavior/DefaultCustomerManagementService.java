@@ -14,44 +14,62 @@ package com.icconsult.interview.usermanagement.behavior;
 
 import com.icconsult.interview.usermanagement.api.dto.CustomerRequest;
 import com.icconsult.interview.usermanagement.api.dto.CustomerResponse;
-import com.icconsult.interview.usermanagement.exception.CustomerNotFoundException;
+import com.icconsult.interview.usermanagement.exception.NotFoundException;
 import com.icconsult.interview.usermanagement.persistance.CustomerEntity;
 import com.icconsult.interview.usermanagement.persistance.CustomerRepository;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+
+import static com.icconsult.interview.usermanagement.exception.NotFoundException.CUSTOMER_WITH_ID_NOT_FOUND;
+
 
 @Service
 public class DefaultCustomerManagementService implements CustomerManagementService {
 
     Logger logger = LoggerFactory.getLogger(DefaultCustomerManagementService.class);
 
+    private final CustomerRepository customerRepository;
+
     @Autowired
-    CustomerRepository customerRepository;
+    public DefaultCustomerManagementService(CustomerRepository customerRepository) {
+        this.customerRepository = customerRepository;
+    }
 
     @Override
     public CustomerResponse getCustomer(String userId) {
-        CustomerEntity customerEntity = customerRepository.findByUserId(userId);
-        logger.info("Successfully retrieved customer from: [givenName=" + customerEntity.getGivenName() + ", familyName=" + customerEntity.getFamilyName() + "email=" + customerEntity.getEmail() + "].");
+        CustomerEntity customerEntity = getCustomerEntityByUserId(userId);
+        logger.info("Successfully retrieved customer from: [givenName="
+                + anonymizeString(customerEntity.getGivenName()) + ", familyName="
+                + anonymizeString(customerEntity.getFamilyName()) + ", email="
+                + anonymizeString(customerEntity.getEmail()) + "].");
         return toCustomerResponse(customerEntity);
     }
 
     @Override
+    @Transactional
     public CustomerResponse updateCustomer(String userId, String admin, CustomerRequest newCustomerEntry) {
-        CustomerEntity customerEntity = customerRepository.findByUserId(userId);
+        CustomerEntity customerEntity = getCustomerEntityByUserId(userId);
+        customerEntity.setFamilyName(newCustomerEntry.getFamilyName());
+        customerEntity.setGivenName(newCustomerEntry.getGivenName());
+        customerEntity.setEmail(newCustomerEntry.getEmail());
 
-        if (customerEntity == null) {
-            logger.warn("Tried to update customer entry which doesn't exist in DB. Nonexistent customer uuid: [" + userId + "].");
-            throw new CustomerNotFoundException("Cannot find customer for update: [" + userId + "].");
-        } else {
-            customerEntity.setFamilyName(newCustomerEntry.getFamilyName());
-            customerEntity.setGivenName(newCustomerEntry.getGivenName());
-        }
 
         try {
+//            I think its better idea to use transactional for important database operations instead of:
+//            customerRepository.save(customerEntity) as in case it was not a looger,
+//            if it was some validation functionality, the changes should not be persisted.
             customerRepository.save(customerEntity);
-            logger.info("Customer update successful, new values: [givenName=" + anonymizeString(customerEntity.getGivenName()) + ", familyName=" + anonymizeString(customerEntity.getFamilyName()) + "email=" + anonymizeString(customerEntity.getEmail()) + "].");
+            logger.info("Customer update successful, new values: [givenName="
+                    + anonymizeString(customerEntity.getGivenName())
+                    + ", familyName="
+                    + anonymizeString(customerEntity.getFamilyName())
+                    + ", email=" + anonymizeString(customerEntity.getEmail())
+                    + "].");
             return toCustomerResponse(customerEntity);
         } catch (Exception e) {
             logger.error("Error while trying to update customer [{}]", e.getMessage(), e);
@@ -60,21 +78,21 @@ public class DefaultCustomerManagementService implements CustomerManagementServi
     }
 
     private CustomerResponse toCustomerResponse(CustomerEntity customerEntity) {
-        CustomerResponse response = new CustomerResponse(customerEntity.getUserId(), customerEntity.getGivenName(), customerEntity.getFamilyName(), customerEntity.getEmail());
-        return response;
+        return new CustomerResponse(customerEntity.getUserId(), customerEntity.getGivenName(), customerEntity.getFamilyName(), customerEntity.getEmail());
+    }
+
+    private CustomerEntity getCustomerEntityByUserId(String userId) {
+        return customerRepository.findByUserId(userId).orElseThrow(() ->
+                new NotFoundException(String.format(CUSTOMER_WITH_ID_NOT_FOUND, anonymizeString(userId))));
     }
 
     private String anonymizeString(String plaintext) {
         if (plaintext == null || plaintext.isBlank() || plaintext.length() <= 2) {
             return plaintext;
         } else {
-            StringBuffer output = new StringBuffer();
-            output.append(plaintext.charAt(0));
-            for (int i = 0; i < plaintext.length() - 2; ++i) {
-                output.append('*');
-            }
-            output.append(plaintext.charAt(plaintext.length()));
-            return output.toString();
+            String padding = StringUtils.repeat('*', plaintext.length() - 2);
+            return plaintext.charAt(0) + padding + plaintext.charAt(plaintext.length() - 1);
         }
     }
+
 }

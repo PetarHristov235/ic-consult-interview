@@ -6,8 +6,8 @@ springdoc:
     disable-swagger-default-url: 'true'
     path: /swagger-ui.html
     oauth:
-      client-id:
-      client-secret: 
+      client-id: 6pDWMLtwKJ0vNXFZsdxbBvzTB79gFZpG
+      client-secret: UybuF9Q86oInrBjMTQRi8HCr_VKF2oejYbK3SCVfvsWNrBTAThwsvuzZMAwsn_3T
       additional-query-string-params:
         audience: customer
       use-basic-authentication-with-access-code-grant: 'true'
@@ -35,6 +35,6 @@ server:
   port: '8080'
 logging:
   level:
-    root: TRACE
+    root: INFO
 
 

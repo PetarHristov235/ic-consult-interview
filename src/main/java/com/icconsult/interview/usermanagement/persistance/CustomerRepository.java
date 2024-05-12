@@ -15,11 +15,13 @@ package com.icconsult.interview.usermanagement.persistance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Transactional
 public interface CustomerRepository extends JpaRepository<CustomerEntity, Long> {
 
-    public CustomerEntity findByUserId(String userId);
+    Optional<CustomerEntity> findByUserId(String userId);
 
-    public <S extends CustomerEntity> S save(S customer);
+    <S extends CustomerEntity> S save(S customer);
 
 }
