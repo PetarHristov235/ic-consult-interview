@@ -14,7 +14,7 @@ package com.icconsult.interview.usermanagement.behavior;
 
 import com.icconsult.interview.usermanagement.api.dto.CustomerRequest;
 import com.icconsult.interview.usermanagement.api.dto.CustomerResponse;
-import com.icconsult.interview.usermanagement.exception.NotFoundException;
+import com.icconsult.interview.usermanagement.exception.CustomerNotFoundException;
 import com.icconsult.interview.usermanagement.persistance.CustomerEntity;
 import com.icconsult.interview.usermanagement.persistance.CustomerRepository;
 import org.apache.commons.lang3.StringUtils;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 
-import static com.icconsult.interview.usermanagement.exception.NotFoundException.CUSTOMER_WITH_ID_NOT_FOUND;
+import static com.icconsult.interview.usermanagement.exception.CustomerNotFoundException.CUSTOMER_WITH_ID_NOT_FOUND;
 
 
 @Service
@@ -83,7 +83,7 @@ public class DefaultCustomerManagementService implements CustomerManagementServi
 
     private CustomerEntity getCustomerEntityByUserId(String userId) {
         return customerRepository.findByUserId(userId).orElseThrow(() ->
-                new NotFoundException(String.format(CUSTOMER_WITH_ID_NOT_FOUND, anonymizeString(userId))));
+                new CustomerNotFoundException(String.format(CUSTOMER_WITH_ID_NOT_FOUND, anonymizeString(userId))));
     }
 
     private String anonymizeString(String plaintext) {
